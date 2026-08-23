@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { WebSocketServer } = require('ws');
 const http = require('http');
@@ -11,7 +10,7 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
 const rooms = {};
-const COLORS = ['Red', 'Green', 'Yellow', 'Blue'];
+const COLORS = ['Blue', 'Red', 'Green', 'Yellow'];
 
 function generateCode() {
   return Math.floor(1000 + Math.random() * 9000).toString();
@@ -25,18 +24,28 @@ wss.on('connection', (ws) => {
 
     if (data.type === 'CREATE_ROOM') {
       const roomCode = generateCode();
+      const maxPlayers = parseInt(data.maxPlayers) || 4;
       rooms[roomCode] = {
         host: ws,
+        mode: data.mode,
+        maxPlayers: maxPlayers,
         players: [{ id: ws.id, name: data.name, color: COLORS[0], ws }]
       };
       ws.roomCode = roomCode;
-      ws.send(JSON.stringify({ type: 'ROOM_CREATED', roomCode, color: COLORS[0], playerId: ws.id }));
+      ws.send(JSON.stringify({ 
+        type: 'ROOM_CREATED', 
+        roomCode, 
+        color: COLORS[0], 
+        playerId: ws.id, 
+        mode: data.mode,
+        maxPlayers: maxPlayers 
+      }));
     }
 
     if (data.type === 'JOIN_ROOM') {
       const room = rooms[data.roomCode];
       if (!room) return ws.send(JSON.stringify({ type: 'ERROR', msg: 'Room not found' }));
-      if (room.players.length >= 4) return ws.send(JSON.stringify({ type: 'ERROR', msg: 'Room full' }));
+      if (room.players.length >= room.maxPlayers) return ws.send(JSON.stringify({ type: 'ERROR', msg: 'Room full' }));
 
       const color = COLORS[room.players.length];
       const newPlayer = { id: ws.id, name: data.name, color, ws };
@@ -44,7 +53,14 @@ wss.on('connection', (ws) => {
       ws.roomCode = data.roomCode;
       room.players.push(newPlayer);
 
-      ws.send(JSON.stringify({ type: 'JOINED_SUCCESS', roomCode: data.roomCode, color, playerId: ws.id }));
+      ws.send(JSON.stringify({ 
+        type: 'JOINED_SUCCESS', 
+        roomCode: data.roomCode, 
+        color, 
+        playerId: ws.id,
+        mode: room.mode,
+        maxPlayers: room.maxPlayers
+      }));
 
       room.host.send(JSON.stringify({
         type: 'NEW_PLAYER_JOINED',
