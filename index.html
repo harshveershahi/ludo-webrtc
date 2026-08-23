@@ -3,48 +3,219 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ludo WebRTC Game</title>
+  <title>Ludo Classic Multiplayer</title>
   <style>
-    body { font-family: sans-serif; background: #121212; color: white; text-align: center; margin: 0; padding: 20px; }
-    .screen { display: none; margin-top: 30px; }
-    .active { display: block; }
-    button { padding: 12px 24px; font-size: 16px; margin: 10px; cursor: pointer; border-radius: 6px; border: none; background: #e67e22; color: white; font-weight: bold; }
-    input { padding: 12px; font-size: 16px; border-radius: 6px; border: 1px solid #444; background: #222; color: white; text-align: center; }
-    #board { width: 280px; height: 280px; border: 4px solid #fff; margin: 20px auto; display: flex; align-items: center; justify-content: center; background: #1e1e2e; border-radius: 12px; }
+    * { box-sizing: border-box; font-family: 'Arial Rounded MT Bold', 'Segoe UI', sans-serif; }
+    body {
+      background: radial-gradient(circle, #1a5276 0%, #0e2439 100%);
+      color: white; margin: 0; padding: 10px;
+      display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+    }
+    .screen { display: none; width: 100%; max-width: 420px; text-align: center; }
+    .active { display: flex; flex-direction: column; align-items: center; }
+    
+    h1 { color: #f39c12; text-shadow: 0 3px 0 #b9770e; margin: 15px 0; }
+    
+    .card {
+      background: #0d3b66; border: 3px solid #f39c12; border-radius: 12px;
+      padding: 20px; width: 100%; box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+    }
+
+    button {
+      background: linear-gradient(180deg, #f39c12 0%, #d35400 100%);
+      color: white; border: 2px solid #fff; border-radius: 20px;
+      padding: 10px 20px; font-size: 16px; font-weight: bold; margin: 8px;
+      cursor: pointer; text-shadow: 0 1px 2px #000; box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+
+    input, select {
+      padding: 10px; font-size: 15px; border-radius: 8px; border: 2px solid #f39c12;
+      background: #001a33; color: white; width: 85%; margin-bottom: 12px; text-align: center;
+    }
+
+    /* Team Selection Layout UI */
+    .team-box {
+      border: 2px dashed #00d2ff; border-radius: 10px; padding: 10px; margin: 8px 0; background: rgba(0,0,0,0.2);
+    }
+    .vs-badge {
+      background: #e74c3c; color: white; font-weight: bold; padding: 4px 12px;
+      border-radius: 50%; display: inline-block; border: 2px solid #fff; margin: 5px 0;
+    }
+
+    /* Game Screen Layout Matching Screenshot */
+    #game-layout {
+      width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center;
+    }
+    .status-header {
+      width: 100%; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 6px; margin-bottom: 8px; font-size: 14px;
+    }
+
+    /* Ludo Board */
+    #ludo-board {
+      width: 360px; height: 360px; display: grid;
+      grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr);
+      background: #fff; border: 4px solid #111; border-radius: 4px; position: relative;
+    }
+
+    .cell { border: 0.5px solid #ccc; display: flex; align-items: center; justify-content: center; position: relative; font-size: 10px; }
+    
+    /* Colors */
+    .bg-red { background: #e74c3c !important; }
+    .bg-green { background: #2ecc71 !important; }
+    .bg-yellow { background: #f1c40f !important; }
+    .bg-blue { background: #3498db !important; }
+
+    /* Corner Bases */
+    .base { position: absolute; width: 40%; height: 40%; border: 2px solid #111; display: flex; align-items: center; justify-content: center; }
+    .base-red { top: 0; left: 0; background: #e74c3c; }
+    .base-green { top: 0; right: 0; background: #2ecc71; }
+    .base-yellow { bottom: 0; right: 0; background: #f1c40f; }
+    .base-blue { bottom: 0; left: 0; background: #3498db; }
+    
+    .base-inner { width: 70%; height: 70%; background: #fff; border-radius: 8px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; padding: 6px; gap: 6px; }
+    .token-spot { border-radius: 50%; border: 2px solid #555; display: flex; align-items: center; justify-content: center; }
+
+    /* Team Badges on Board */
+    .team-badge-on-board {
+      position: absolute; width: 22px; height: 22px; border-radius: 50%; color: white;
+      font-weight: bold; font-size: 11px; display: flex; align-items: center; justify-content: center;
+      border: 1.5px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.5); z-index: 5;
+    }
+    .badge-a { background: #00d2ff; }
+    .badge-b { background: #ff0055; }
+
+    /* Center Triangle */
+    .center-home {
+      grid-column: 7 / 10; grid-row: 7 / 10;
+      background: conic-gradient(#e74c3c 0 90deg, #2ecc71 90deg 180deg, #f1c40f 180deg 270deg, #3498db 270deg 360deg);
+      border: 1px solid #111;
+    }
+
+    /* Player Status & Dice Panels */
+    .controls-panel {
+      width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 10px;
+    }
+    .dice-box {
+      width: 50px; height: 50px; background: #fff; border: 3px solid #f39c12;
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      font-size: 24px; color: #000; box-shadow: 0 4px 6px rgba(0,0,0,0.4); cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
+  <!-- Screen 1: Main Menu -->
   <div id="title-screen" class="screen active">
-    <h1 style="color:#f39c12;">LUDO MULTIPLAYER</h1>
-    <button onclick="showScreen('multiplayer-screen')">Online Game</button>
+    <h1>LUDO KINGDOM</h1>
+    <div class="card">
+      <button onclick="showScreen('mode-screen')">Online Multiplayer</button><br>
+      <button onclick="alert('Local Mode Coming Soon!')">Local Pass & Play</button>
+    </div>
   </div>
 
-  <div id="multiplayer-screen" class="screen">
-    <h2>Online Lobby</h2>
-    <input type="text" id="player-name" placeholder="Enter Your Name"><br><br>
-    <button onclick="hostGame()">Host Game</button>
-    <button onclick="showScreen('join-screen')">Join Game</button>
+  <!-- Screen 2: Mode Options -->
+  <div id="mode-screen" class="screen">
+    <h2>Select Game Mode</h2>
+    <div class="card">
+      <input type="text" id="player-name" placeholder="Enter Your Name"><br>
+      <label style="display:block; margin: 10px 0 5px;">Select Mode:</label>
+      <select id="game-mode-select">
+        <option value="INDIVIDUAL">1v1v1v1 (Individual)</option>
+        <option value="TEAM">2v2 (Team Mode)</option>
+      </select><br>
+      <button onclick="hostGame()">Host Game</button><br>
+      <button onclick="showScreen('join-screen')">Join Game</button>
+    </div>
   </div>
 
+  <!-- Screen 3: Join Room -->
   <div id="join-screen" class="screen">
     <h2>Join Room</h2>
-    <input type="text" id="room-code-input" placeholder="Enter 4-Digit Code"><br><br>
-    <button onclick="joinGame()">Enter Room</button>
+    <div class="card">
+      <input type="text" id="room-code-input" placeholder="Enter 4-Digit Code"><br>
+      <button onclick="joinGame()">Enter Room</button>
+    </div>
   </div>
 
+  <!-- Screen 4: Lobby -->
   <div id="lobby-screen" class="screen">
     <h2>Room Code: <span id="code-display" style="color:#f39c12"></span></h2>
-    <p>Connected Peers: <span id="peer-count">1</span>/4</p>
-    <button id="start-btn" style="display:none;" onclick="startGame()">Start Game</button>
+    <div class="card">
+      <p id="mode-display-text" style="font-weight:bold; color:#00d2ff;"></p>
+      
+      <!-- Dynamic Team Preview UI matching screenshot -->
+      <div id="team-preview-container">
+        <div class="team-box" style="border-color:#00d2ff;">
+          <span style="color:#00d2ff; font-weight:bold;">TEAM A</span>
+          <div id="team-a-players">Player 1 (Blue) & Player 3 (Green)</div>
+        </div>
+        <div class="vs-badge">VS</div>
+        <div class="team-box" style="border-color:#ff0055;">
+          <span style="color:#ff0055; font-weight:bold;">TEAM B</span>
+          <div id="team-b-players">Player 2 (Red) & Player 4 (Yellow)</div>
+        </div>
+      </div>
+
+      <p>Connected: <span id="peer-count">1</span>/4</p>
+      <button id="start-btn" style="display:none;" onclick="startGame()">Start Play</button>
+    </div>
   </div>
 
+  <!-- Screen 5: Main Game Board Screen -->
   <div id="game-screen" class="screen">
-    <h2 id="turn-display">Turn: Red</h2>
-    <div id="board">
-      <div id="dice-display" style="font-size: 36px;">🎲 -</div>
+    <div id="game-layout">
+      <div class="status-header">
+        <span id="game-mode-tag" style="color:#f39c12; font-weight:bold;">Mode: 2v2 Team</span> | 
+        <span id="turn-display">Turn: Player 1 (Blue)</span>
+      </div>
+
+      <div id="ludo-board">
+        <!-- Colored Bases -->
+        <div class="base base-red">
+          <div class="base-inner">
+            <div class="token-spot bg-red"></div><div class="token-spot bg-red"></div>
+            <div class="token-spot bg-red"></div><div class="token-spot bg-red"></div>
+          </div>
+        </div>
+        <div class="base base-green">
+          <div class="base-inner">
+            <div class="token-spot bg-green"></div><div class="token-spot bg-green"></div>
+            <div class="token-spot bg-green"></div><div class="token-spot bg-green"></div>
+          </div>
+        </div>
+        <div class="base base-yellow">
+          <div class="base-inner">
+            <div class="token-spot bg-yellow"></div><div class="token-spot bg-yellow"></div>
+            <div class="token-spot bg-yellow"></div><div class="token-spot bg-yellow"></div>
+          </div>
+        </div>
+        <div class="base base-blue">
+          <div class="base-inner">
+            <div class="token-spot bg-blue"></div><div class="token-spot bg-blue"></div>
+            <div class="token-spot bg-blue"></div><div class="token-spot bg-blue"></div>
+          </div>
+        </div>
+
+        <!-- Optional Team Badges (Team A / B) overlay -->
+        <div id="team-badges-overlay">
+          <div class="team-badge-on-board badge-a" style="bottom: 40%; left: 36%;">A</div>
+          <div class="team-badge-on-board badge-b" style="top: 40%; left: 36%;">B</div>
+          <div class="team-badge-on-board badge-a" style="top: 40%; right: 36%;">A</div>
+          <div class="team-badge-on-board badge-b" style="bottom: 40%; right: 36%;">B</div>
+        </div>
+
+        <!-- Center Triangle -->
+        <div class="center-home"></div>
+      </div>
+
+      <div class="controls-panel">
+        <div style="text-align:left;">
+          <small>Current Turn</small><br>
+          <strong id="active-player-name" style="color:#3498db;">Player 1</strong>
+        </div>
+        <div class="dice-box" id="dice-display" onclick="rollDice()">🎲</div>
+      </div>
     </div>
-    <button id="roll-btn" onclick="rollDice()">Roll Dice (P2P)</button>
   </div>
 
   <script>
@@ -58,15 +229,45 @@
     let myColor = null;
     let roomCode = null;
     let isHost = false;
+    let selectedMode = 'TEAM';
 
-    const rtcConfig = {
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    };
+    const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
     }
+
+    // Generate Grid Tracks
+    function setupGrid() {
+      const board = document.getElementById('ludo-board');
+      // Create path cells dynamically
+      for (let r = 1; r <= 15; r++) {
+        for (let c = 1; c <= 15; c++) {
+          if ((r <= 6 && c <= 6) || (r <= 6 && c >= 10) || (r >= 10 && c <= 6) || (r >= 10 && c >= 10) || (r >= 7 && r <= 9 && c >= 7 && c <= 9)) {
+            continue; // Skip base & center areas
+          }
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.style.gridRow = r;
+          cell.style.gridColumn = c;
+
+          // Home paths
+          if (r === 8 && c >= 2 && c <= 6) cell.classList.add('bg-blue');
+          if (c === 8 && r >= 2 && r <= 6) cell.classList.add('bg-red');
+          if (r === 8 && c >= 10 && c <= 14) cell.classList.add('bg-yellow');
+          if (c === 8 && r >= 10 && r <= 14) cell.classList.add('bg-green');
+
+          // Safe Spots (Stars)
+          if ((r === 7 && c === 2) || (r === 3 && c === 9) || (r === 9 && c === 14) || (r === 13 && c === 7)) {
+            cell.innerHTML = '⭐';
+          }
+
+          board.appendChild(cell);
+        }
+      }
+    }
+    setupGrid();
 
     ws.onmessage = async (event) => {
       const data = JSON.parse(event.data);
@@ -75,7 +276,16 @@
         myId = data.playerId;
         myColor = data.color;
         roomCode = data.roomCode;
+        selectedMode = data.mode || selectedMode;
+
         document.getElementById('code-display').innerText = roomCode;
+        document.getElementById('mode-display-text').innerText = `Mode: ${selectedMode === 'TEAM' ? '2v2 Team Battle' : '1v1v1v1 Individual'}`;
+        
+        if (selectedMode === 'INDIVIDUAL') {
+          document.getElementById('team-preview-container').style.display = 'none';
+          document.getElementById('team-badges-overlay').style.display = 'none';
+        }
+
         if (isHost) document.getElementById('start-btn').style.display = 'inline-block';
         showScreen('lobby-screen');
       }
@@ -138,7 +348,8 @@
     function hostGame() {
       isHost = true;
       const name = document.getElementById('player-name').value || 'Host';
-      ws.send(JSON.stringify({ type: 'CREATE_ROOM', name }));
+      selectedMode = document.getElementById('game-mode-select').value;
+      ws.send(JSON.stringify({ type: 'CREATE_ROOM', name, mode: selectedMode }));
     }
 
     function joinGame() {
@@ -149,7 +360,7 @@
     }
 
     function startGame() {
-      broadcastP2P({ type: 'START_GAME' });
+      broadcastP2P({ type: 'START_GAME', mode: selectedMode });
       showScreen('game-screen');
     }
 
@@ -161,18 +372,17 @@
 
     function rollDice() {
       const val = Math.floor(Math.random() * 6) + 1;
-      document.getElementById('dice-display').innerText = `🎲 ${val}`;
+      document.getElementById('dice-display').innerText = val;
       broadcastP2P({ type: 'DICE_ROLLED', value: val, color: myColor });
     }
 
     function handleP2PMessage(data) {
       if (data.type === 'START_GAME') showScreen('game-screen');
       if (data.type === 'DICE_ROLLED') {
-        document.getElementById('dice-display').innerText = `🎲 ${data.value}`;
-        document.getElementById('turn-display').innerText = `${data.color} rolled a ${data.value}!`;
+        document.getElementById('dice-display').innerText = data.value;
+        document.getElementById('turn-display').innerText = `${data.color} rolled ${data.value}`;
       }
     }
   </script>
 </body>
 </html>
-
