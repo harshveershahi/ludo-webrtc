@@ -33,7 +33,6 @@
       background: #001a33; color: white; width: 85%; margin-bottom: 12px; text-align: center;
     }
 
-    /* Team Selection Layout UI */
     .team-box {
       border: 2px dashed #00d2ff; border-radius: 10px; padding: 10px; margin: 8px 0; background: rgba(0,0,0,0.2);
     }
@@ -42,7 +41,6 @@
       border-radius: 50%; display: inline-block; border: 2px solid #fff; margin: 5px 0;
     }
 
-    /* Game Screen Layout Matching Screenshot */
     #game-layout {
       width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center;
     }
@@ -50,7 +48,6 @@
       width: 100%; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 6px; margin-bottom: 8px; font-size: 14px;
     }
 
-    /* Ludo Board */
     #ludo-board {
       width: 360px; height: 360px; display: grid;
       grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr);
@@ -59,13 +56,11 @@
 
     .cell { border: 0.5px solid #ccc; display: flex; align-items: center; justify-content: center; position: relative; font-size: 10px; }
     
-    /* Colors */
     .bg-red { background: #e74c3c !important; }
     .bg-green { background: #2ecc71 !important; }
     .bg-yellow { background: #f1c40f !important; }
     .bg-blue { background: #3498db !important; }
 
-    /* Corner Bases */
     .base { position: absolute; width: 40%; height: 40%; border: 2px solid #111; display: flex; align-items: center; justify-content: center; }
     .base-red { top: 0; left: 0; background: #e74c3c; }
     .base-green { top: 0; right: 0; background: #2ecc71; }
@@ -75,7 +70,6 @@
     .base-inner { width: 70%; height: 70%; background: #fff; border-radius: 8px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; padding: 6px; gap: 6px; }
     .token-spot { border-radius: 50%; border: 2px solid #555; display: flex; align-items: center; justify-content: center; }
 
-    /* Team Badges on Board */
     .team-badge-on-board {
       position: absolute; width: 22px; height: 22px; border-radius: 50%; color: white;
       font-weight: bold; font-size: 11px; display: flex; align-items: center; justify-content: center;
@@ -84,14 +78,12 @@
     .badge-a { background: #00d2ff; }
     .badge-b { background: #ff0055; }
 
-    /* Center Triangle */
     .center-home {
       grid-column: 7 / 10; grid-row: 7 / 10;
       background: conic-gradient(#e74c3c 0 90deg, #2ecc71 90deg 180deg, #f1c40f 180deg 270deg, #3498db 270deg 360deg);
       border: 1px solid #111;
     }
 
-    /* Player Status & Dice Panels */
     .controls-panel {
       width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 10px;
     }
@@ -109,20 +101,28 @@
     <h1>LUDO KINGDOM</h1>
     <div class="card">
       <button onclick="showScreen('mode-screen')">Online Multiplayer</button><br>
-      <button onclick="alert('Local Mode Coming Soon!')">Local Pass & Play</button>
     </div>
   </div>
 
   <!-- Screen 2: Mode Options -->
   <div id="mode-screen" class="screen">
-    <h2>Select Game Mode</h2>
+    <h2>Select Game Settings</h2>
     <div class="card">
       <input type="text" id="player-name" placeholder="Enter Your Name"><br>
-      <label style="display:block; margin: 10px 0 5px;">Select Mode:</label>
-      <select id="game-mode-select">
-        <option value="INDIVIDUAL">1v1v1v1 (Individual)</option>
-        <option value="TEAM">2v2 (Team Mode)</option>
+      
+      <label style="display:block; margin: 10px 0 5px;">Number of Players:</label>
+      <select id="player-count-select" onchange="toggleTeamOption()">
+        <option value="2">2 Players</option>
+        <option value="3">3 Players</option>
+        <option value="4" selected>4 Players</option>
       </select><br>
+
+      <label style="display:block; margin: 10px 0 5px;">Game Mode:</label>
+      <select id="game-mode-select">
+        <option value="INDIVIDUAL">Individual (1v1)</option>
+        <option value="TEAM" id="team-mode-option">2v2 (Team Mode)</option>
+      </select><br>
+
       <button onclick="hostGame()">Host Game</button><br>
       <button onclick="showScreen('join-screen')">Join Game</button>
     </div>
@@ -143,7 +143,6 @@
     <div class="card">
       <p id="mode-display-text" style="font-weight:bold; color:#00d2ff;"></p>
       
-      <!-- Dynamic Team Preview UI matching screenshot -->
       <div id="team-preview-container">
         <div class="team-box" style="border-color:#00d2ff;">
           <span style="color:#00d2ff; font-weight:bold;">TEAM A</span>
@@ -156,7 +155,7 @@
         </div>
       </div>
 
-      <p>Connected: <span id="peer-count">1</span>/4</p>
+      <p>Connected: <span id="peer-count">1</span>/<span id="max-peer-count">4</span></p>
       <button id="start-btn" style="display:none;" onclick="startGame()">Start Play</button>
     </div>
   </div>
@@ -165,12 +164,11 @@
   <div id="game-screen" class="screen">
     <div id="game-layout">
       <div class="status-header">
-        <span id="game-mode-tag" style="color:#f39c12; font-weight:bold;">Mode: 2v2 Team</span> | 
+        <span id="game-mode-tag" style="color:#f39c12; font-weight:bold;">Mode</span> | 
         <span id="turn-display">Turn: Player 1 (Blue)</span>
       </div>
 
       <div id="ludo-board">
-        <!-- Colored Bases -->
         <div class="base base-red">
           <div class="base-inner">
             <div class="token-spot bg-red"></div><div class="token-spot bg-red"></div>
@@ -196,7 +194,6 @@
           </div>
         </div>
 
-        <!-- Optional Team Badges (Team A / B) overlay -->
         <div id="team-badges-overlay">
           <div class="team-badge-on-board badge-a" style="bottom: 40%; left: 36%;">A</div>
           <div class="team-badge-on-board badge-b" style="top: 40%; left: 36%;">B</div>
@@ -204,7 +201,6 @@
           <div class="team-badge-on-board badge-b" style="bottom: 40%; right: 36%;">B</div>
         </div>
 
-        <!-- Center Triangle -->
         <div class="center-home"></div>
       </div>
 
@@ -229,7 +225,8 @@
     let myColor = null;
     let roomCode = null;
     let isHost = false;
-    let selectedMode = 'TEAM';
+    let selectedMode = 'INDIVIDUAL';
+    let maxPlayers = 4;
 
     const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
@@ -238,27 +235,34 @@
       document.getElementById(id).classList.add('active');
     }
 
-    // Generate Grid Tracks
+    function toggleTeamOption() {
+      const pCount = document.getElementById('player-count-select').value;
+      const teamOpt = document.getElementById('team-mode-option');
+      if (pCount !== '4') {
+        teamOpt.disabled = true;
+        document.getElementById('game-mode-select').value = 'INDIVIDUAL';
+      } else {
+        teamOpt.disabled = false;
+      }
+    }
+
     function setupGrid() {
       const board = document.getElementById('ludo-board');
-      // Create path cells dynamically
       for (let r = 1; r <= 15; r++) {
         for (let c = 1; c <= 15; c++) {
           if ((r <= 6 && c <= 6) || (r <= 6 && c >= 10) || (r >= 10 && c <= 6) || (r >= 10 && c >= 10) || (r >= 7 && r <= 9 && c >= 7 && c <= 9)) {
-            continue; // Skip base & center areas
+            continue;
           }
           const cell = document.createElement('div');
           cell.className = 'cell';
           cell.style.gridRow = r;
           cell.style.gridColumn = c;
 
-          // Home paths
           if (r === 8 && c >= 2 && c <= 6) cell.classList.add('bg-blue');
           if (c === 8 && r >= 2 && r <= 6) cell.classList.add('bg-red');
           if (r === 8 && c >= 10 && c <= 14) cell.classList.add('bg-yellow');
           if (c === 8 && r >= 10 && r <= 14) cell.classList.add('bg-green');
 
-          // Safe Spots (Stars)
           if ((r === 7 && c === 2) || (r === 3 && c === 9) || (r === 9 && c === 14) || (r === 13 && c === 7)) {
             cell.innerHTML = '⭐';
           }
@@ -277,11 +281,14 @@
         myColor = data.color;
         roomCode = data.roomCode;
         selectedMode = data.mode || selectedMode;
+        maxPlayers = data.maxPlayers || maxPlayers;
 
         document.getElementById('code-display').innerText = roomCode;
-        document.getElementById('mode-display-text').innerText = `Mode: ${selectedMode === 'TEAM' ? '2v2 Team Battle' : '1v1v1v1 Individual'}`;
-        
-        if (selectedMode === 'INDIVIDUAL') {
+        document.getElementById('max-peer-count').innerText = maxPlayers;
+        document.getElementById('mode-display-text').innerText = `${maxPlayers} Players - ${selectedMode === 'TEAM' ? '2v2 Team Battle' : 'Individual Mode'}`;
+        document.getElementById('game-mode-tag').innerText = `${maxPlayers} Player ${selectedMode}`;
+
+        if (selectedMode !== 'TEAM') {
           document.getElementById('team-preview-container').style.display = 'none';
           document.getElementById('team-badges-overlay').style.display = 'none';
         }
@@ -348,8 +355,9 @@
     function hostGame() {
       isHost = true;
       const name = document.getElementById('player-name').value || 'Host';
+      maxPlayers = document.getElementById('player-count-select').value;
       selectedMode = document.getElementById('game-mode-select').value;
-      ws.send(JSON.stringify({ type: 'CREATE_ROOM', name, mode: selectedMode }));
+      ws.send(JSON.stringify({ type: 'CREATE_ROOM', name, mode: selectedMode, maxPlayers: maxPlayers }));
     }
 
     function joinGame() {
@@ -386,3 +394,4 @@
   </script>
 </body>
 </html>
+
