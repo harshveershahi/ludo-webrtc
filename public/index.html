@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ludo Classic Multiplayer</title>
+  <title>Ludo Classic Multiplayer & Offline</title>
   <style>
     * { box-sizing: border-box; font-family: 'Arial Rounded MT Bold', 'Segoe UI', sans-serif; }
     body {
@@ -100,13 +100,14 @@
   <div id="title-screen" class="screen active">
     <h1>LUDO KINGDOM</h1>
     <div class="card">
-      <button onclick="showScreen('mode-screen')">Online Multiplayer</button><br>
+      <button onclick="openOnlineMenu()">Online Multiplayer</button><br>
+      <button onclick="openOfflineMenu()">Pass & Play (Offline)</button>
     </div>
   </div>
 
   <!-- Screen 2: Mode Options -->
   <div id="mode-screen" class="screen">
-    <h2>Select Game Settings</h2>
+    <h2 id="mode-screen-title">Online Settings</h2>
     <div class="card">
       <input type="text" id="player-name" placeholder="Enter Your Name"><br>
       
@@ -123,8 +124,16 @@
         <option value="TEAM" id="team-mode-option">2v2 (Team Mode)</option>
       </select><br>
 
-      <button onclick="hostGame()">Host Game</button><br>
-      <button onclick="showScreen('join-screen')">Join Game</button>
+      <div id="online-actions">
+        <button onclick="hostGame()">Host Game</button><br>
+        <button onclick="showScreen('join-screen')">Join Game</button>
+      </div>
+
+      <div id="offline-actions" style="display:none;">
+        <button onclick="startOfflineGame()">Start Pass & Play</button>
+      </div>
+
+      <br><button style="background:#555;" onclick="showScreen('title-screen')">Back</button>
     </div>
   </div>
 
@@ -133,7 +142,8 @@
     <h2>Join Room</h2>
     <div class="card">
       <input type="text" id="room-code-input" placeholder="Enter 4-Digit Code"><br>
-      <button onclick="joinGame()">Enter Room</button>
+      <button onclick="joinGame()">Enter Room</button><br>
+      <button style="background:#555;" onclick="showScreen('mode-screen')">Back</button>
     </div>
   </div>
 
@@ -146,12 +156,12 @@
       <div id="team-preview-container">
         <div class="team-box" style="border-color:#00d2ff;">
           <span style="color:#00d2ff; font-weight:bold;">TEAM A</span>
-          <div id="team-a-players">Player 1 (Blue) & Player 3 (Green)</div>
+          <div>Player 1 (Blue) & Player 3 (Green)</div>
         </div>
         <div class="vs-badge">VS</div>
         <div class="team-box" style="border-color:#ff0055;">
           <span style="color:#ff0055; font-weight:bold;">TEAM B</span>
-          <div id="team-b-players">Player 2 (Red) & Player 4 (Yellow)</div>
+          <div>Player 2 (Red) & Player 4 (Yellow)</div>
         </div>
       </div>
 
@@ -207,7 +217,7 @@
       <div class="controls-panel">
         <div style="text-align:left;">
           <small>Current Turn</small><br>
-          <strong id="active-player-name" style="color:#3498db;">Player 1</strong>
+          <strong id="active-player-name" style="color:#3498db;">Blue</strong>
         </div>
         <div class="dice-box" id="dice-display" onclick="rollDice()">🎲</div>
       </div>
@@ -215,9 +225,7 @@
   </div>
 
   <script>
-    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${location.host}`);
-
+    let ws = null;
     const peerConnections = {};
     const dataChannels = {};
 
@@ -225,14 +233,94 @@
     let myColor = null;
     let roomCode = null;
     let isHost = false;
+    let isOffline = false;
     let selectedMode = 'INDIVIDUAL';
     let maxPlayers = 4;
+    
+    // Offline turn management
+    const activeColors = ['Blue', 'Red', 'Green', 'Yellow'];
+    let currentTurnIndex = 0;
 
     const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
+    }
+
+    function initWebSocket() {
+      if (ws && ws.readyState === WebSocket.OPEN) return;
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${protocol}//${location.host}`);
+
+      ws.onmessage = async (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'ERROR') {
+          alert(data.msg);
+          return;
+        }
+
+        if (data.type === 'ROOM_CREATED' || data.type === 'JOINED_SUCCESS') {
+          myId = data.playerId;
+          myColor = data.color;
+          roomCode = data.roomCode;
+          selectedMode = data.mode || selectedMode;
+          maxPlayers = data.maxPlayers || maxPlayers;
+
+          document.getElementById('code-display').innerText = roomCode;
+          document.getElementById('max-peer-count').innerText = maxPlayers;
+          document.getElementById('mode-display-text').innerText = `${maxPlayers} Players - ${selectedMode === 'TEAM' ? '2v2 Team Battle' : 'Individual Mode'}`;
+          document.getElementById('game-mode-tag').innerText = `Online - ${maxPlayers} Players`;
+
+          if (selectedMode !== 'TEAM') {
+            document.getElementById('team-preview-container').style.display = 'none';
+            document.getElementById('team-badges-overlay').style.display = 'none';
+          }
+
+          if (isHost) document.getElementById('start-btn').style.display = 'inline-block';
+          showScreen('lobby-screen');
+        }
+
+        if (data.type === 'NEW_PLAYER_JOINED') {
+          createPeerConnection(data.peerId, true);
+        }
+
+        if (data.type === 'OFFER') {
+          const pc = createPeerConnection(data.senderId, false);
+          await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          ws.send(JSON.stringify({ type: 'ANSWER', answer, targetId: data.senderId }));
+        }
+
+        if (data.type === 'ANSWER') {
+          const pc = peerConnections[data.senderId];
+          if (pc) await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+        }
+
+        if (data.type === 'ICE_CANDIDATE') {
+          const pc = peerConnections[data.senderId];
+          if (pc) await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+        }
+      };
+    }
+
+    function openOnlineMenu() {
+      isOffline = false;
+      document.getElementById('mode-screen-title').innerText = "Online Settings";
+      document.getElementById('online-actions').style.display = "block";
+      document.getElementById('offline-actions').style.display = "none";
+      initWebSocket();
+      showScreen('mode-screen');
+    }
+
+    function openOfflineMenu() {
+      isOffline = true;
+      document.getElementById('mode-screen-title').innerText = "Offline (Pass & Play)";
+      document.getElementById('online-actions').style.display = "none";
+      document.getElementById('offline-actions').style.display = "block";
+      showScreen('mode-screen');
     }
 
     function toggleTeamOption() {
@@ -273,53 +361,6 @@
     }
     setupGrid();
 
-    ws.onmessage = async (event) => {
-      const data = JSON.parse(event.data);
-
-      if (data.type === 'ROOM_CREATED' || data.type === 'JOINED_SUCCESS') {
-        myId = data.playerId;
-        myColor = data.color;
-        roomCode = data.roomCode;
-        selectedMode = data.mode || selectedMode;
-        maxPlayers = data.maxPlayers || maxPlayers;
-
-        document.getElementById('code-display').innerText = roomCode;
-        document.getElementById('max-peer-count').innerText = maxPlayers;
-        document.getElementById('mode-display-text').innerText = `${maxPlayers} Players - ${selectedMode === 'TEAM' ? '2v2 Team Battle' : 'Individual Mode'}`;
-        document.getElementById('game-mode-tag').innerText = `${maxPlayers} Player ${selectedMode}`;
-
-        if (selectedMode !== 'TEAM') {
-          document.getElementById('team-preview-container').style.display = 'none';
-          document.getElementById('team-badges-overlay').style.display = 'none';
-        }
-
-        if (isHost) document.getElementById('start-btn').style.display = 'inline-block';
-        showScreen('lobby-screen');
-      }
-
-      if (data.type === 'NEW_PLAYER_JOINED') {
-        createPeerConnection(data.peerId, true);
-      }
-
-      if (data.type === 'OFFER') {
-        const pc = createPeerConnection(data.senderId, false);
-        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        ws.send(JSON.stringify({ type: 'ANSWER', answer, targetId: data.senderId }));
-      }
-
-      if (data.type === 'ANSWER') {
-        const pc = peerConnections[data.senderId];
-        if (pc) await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-      }
-
-      if (data.type === 'ICE_CANDIDATE') {
-        const pc = peerConnections[data.senderId];
-        if (pc) await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-      }
-    };
-
     function createPeerConnection(peerId, isInitiator) {
       const pc = new RTCPeerConnection(rtcConfig);
       peerConnections[peerId] = pc;
@@ -353,6 +394,11 @@
     }
 
     function hostGame() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        alert("Connecting to server... please try again in 3 seconds.");
+        initWebSocket();
+        return;
+      }
       isHost = true;
       const name = document.getElementById('player-name').value || 'Host';
       maxPlayers = document.getElementById('player-count-select').value;
@@ -361,10 +407,33 @@
     }
 
     function joinGame() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        alert("Connecting to server... please try again in 3 seconds.");
+        initWebSocket();
+        return;
+      }
       isHost = false;
       const name = document.getElementById('player-name').value || 'Player';
       const code = document.getElementById('room-code-input').value.trim();
+      if (!code) {
+        alert("Please enter a 4-digit room code.");
+        return;
+      }
       ws.send(JSON.stringify({ type: 'JOIN_ROOM', roomCode: code, name }));
+    }
+
+    function startOfflineGame() {
+      maxPlayers = parseInt(document.getElementById('player-count-select').value);
+      selectedMode = document.getElementById('game-mode-select').value;
+
+      document.getElementById('game-mode-tag').innerText = `Offline - ${maxPlayers} Players`;
+      if (selectedMode !== 'TEAM') {
+        document.getElementById('team-badges-overlay').style.display = 'none';
+      }
+
+      currentTurnIndex = 0;
+      updateTurnUI();
+      showScreen('game-screen');
     }
 
     function startGame() {
@@ -381,7 +450,22 @@
     function rollDice() {
       const val = Math.floor(Math.random() * 6) + 1;
       document.getElementById('dice-display').innerText = val;
-      broadcastP2P({ type: 'DICE_ROLLED', value: val, color: myColor });
+
+      if (isOffline) {
+        const currentColor = activeColors[currentTurnIndex];
+        document.getElementById('turn-display').innerText = `${currentColor} rolled a ${val}`;
+        
+        // Advance offline turn
+        currentTurnIndex = (currentTurnIndex + 1) % maxPlayers;
+        updateTurnUI();
+      } else {
+        broadcastP2P({ type: 'DICE_ROLLED', value: val, color: myColor });
+      }
+    }
+
+    function updateTurnUI() {
+      const nextColor = activeColors[currentTurnIndex];
+      document.getElementById('active-player-name').innerText = nextColor;
     }
 
     function handleP2PMessage(data) {
@@ -394,4 +478,3 @@
   </script>
 </body>
 </html>
-
