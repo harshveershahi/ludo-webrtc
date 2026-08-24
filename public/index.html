@@ -3,70 +3,76 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ludo Master - Official Rules Engine</title>
+  <title>Ludo Kingdom - Complete Rules & Visuals</title>
   <style>
-    * { box-sizing: border-box; font-family: 'Arial Rounded MT Bold', 'Segoe UI', sans-serif; }
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body {
-      background: radial-gradient(circle, #1a5276 0%, #0e2439 100%);
+      background: radial-gradient(circle, #1e3c72 0%, #2a5298 100%);
       color: white; margin: 0; padding: 10px;
       display: flex; flex-direction: column; align-items: center; min-height: 100vh;
     }
-    .screen { display: none; width: 100%; max-width: 420px; text-align: center; }
+    .screen { display: none; width: 100%; max-width: 440px; text-align: center; }
     .active { display: flex; flex-direction: column; align-items: center; }
     
-    h1 { color: #f39c12; text-shadow: 0 3px 0 #b9770e; margin: 15px 0; }
+    h1 { color: #f1c40f; text-shadow: 0 4px 0 #b7950b; margin: 15px 0; font-size: 32px; font-weight: 900; }
     
     .card {
-      background: #0d3b66; border: 3px solid #f39c12; border-radius: 12px;
-      padding: 20px; width: 100%; box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+      background: #0f2027; border: 3px solid #f1c40f; border-radius: 16px;
+      padding: 20px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.6);
     }
 
     button {
       background: linear-gradient(180deg, #f39c12 0%, #d35400 100%);
-      color: white; border: 2px solid #fff; border-radius: 20px;
-      padding: 10px 20px; font-size: 16px; font-weight: bold; margin: 8px;
-      cursor: pointer; text-shadow: 0 1px 2px #000; box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      color: white; border: 2px solid #fff; border-radius: 25px;
+      padding: 12px 24px; font-size: 16px; font-weight: bold; margin: 8px;
+      cursor: pointer; text-shadow: 0 1px 2px #000; box-shadow: 0 4px 10px rgba(0,0,0,0.4);
     }
 
     input, select {
-      padding: 10px; font-size: 15px; border-radius: 8px; border: 2px solid #f39c12;
+      padding: 12px; font-size: 15px; border-radius: 10px; border: 2px solid #f1c40f;
       background: #001a33; color: white; width: 85%; margin-bottom: 12px; text-align: center;
     }
 
-    /* Game Layout */
-    #game-layout { width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; }
-    .status-header { width: 100%; background: rgba(0,0,0,0.4); border-radius: 8px; padding: 6px; margin-bottom: 8px; font-size: 13px; }
+    /* Container for Game Board and Controls */
+    #game-layout { width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; position: relative; }
+    
+    .status-banner {
+      width: 100%; background: rgba(0,0,0,0.6); border-radius: 10px; padding: 8px; margin-bottom: 8px;
+      font-size: 14px; font-weight: bold; border: 1.5px solid #f1c40f; text-align: center;
+    }
 
-    /* Ludo Board */
+    /* Board Frame */
+    #ludo-board-wrapper { position: relative; width: 360px; height: 360px; }
+
     #ludo-board {
       width: 360px; height: 360px; display: grid;
       grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr);
-      background: #fff; border: 4px solid #111; border-radius: 4px; position: relative;
+      background: #fff; border: 5px solid #222; border-radius: 8px; position: relative;
     }
 
-    .cell { border: 0.5px solid #ccc; display: flex; align-items: center; justify-content: center; position: relative; font-size: 10px; }
+    .cell { border: 0.5px solid #ddd; display: flex; align-items: center; justify-content: center; position: relative; }
     
     .bg-red { background: #e74c3c !important; }
     .bg-green { background: #2ecc71 !important; }
     .bg-yellow { background: #f1c40f !important; }
     .bg-blue { background: #3498db !important; }
 
-    .base { position: absolute; width: 40%; height: 40%; border: 2px solid #111; display: flex; align-items: center; justify-content: center; }
+    .base { position: absolute; width: 40%; height: 40%; border: 3px solid #222; display: flex; align-items: center; justify-content: center; z-index: 2; }
+    .base-blue { bottom: 0; left: 0; background: #3498db; }
     .base-red { top: 0; left: 0; background: #e74c3c; }
     .base-green { top: 0; right: 0; background: #2ecc71; }
     .base-yellow { bottom: 0; right: 0; background: #f1c40f; }
-    .base-blue { bottom: 0; left: 0; background: #3498db; }
     
-    .base-inner { width: 70%; height: 70%; background: #fff; border-radius: 8px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; padding: 6px; gap: 6px; }
+    .base-inner { width: 70%; height: 70%; background: #fff; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; padding: 6px; gap: 6px; }
 
-    /* Custom Goti / Token Styling */
+    /* Custom Stylish Gotis / Pawns */
     .goti {
-      width: 18px; height: 18px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-      border: 2px solid #fff; box-shadow: 0 3px 5px rgba(0,0,0,0.6);
-      cursor: pointer; z-index: 10; transition: transform 0.2s;
+      width: 20px; height: 20px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border: 2px solid #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.7);
+      cursor: pointer; z-index: 10; transition: all 0.2s ease;
     }
-    .goti.selectable { animation: bounce 0.6s infinite alternate; }
-    @keyframes bounce { 0% { transform: scale(1); } 100% { transform: scale(1.3); } }
+    .goti.selectable { animation: pulse 0.6s infinite alternate; }
+    @keyframes pulse { 0% { transform: scale(1); filter: drop-shadow(0 0 4px #fff); } 100% { transform: scale(1.35); filter: drop-shadow(0 0 10px #f1c40f); } }
 
     .goti-Blue { background: radial-gradient(circle at 30% 30%, #5dade2, #1b4f72); }
     .goti-Red { background: radial-gradient(circle at 30% 30%, #ec7063, #78281f); }
@@ -76,14 +82,28 @@
     .center-home {
       grid-column: 7 / 10; grid-row: 7 / 10;
       background: conic-gradient(#e74c3c 0 90deg, #2ecc71 90deg 180deg, #f1c40f 180deg 270deg, #3498db 270deg 360deg);
-      border: 1px solid #111;
+      border: 1px solid #111; z-index: 1;
     }
 
-    .controls-panel { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-    .dice-box {
-      width: 55px; height: 55px; background: #fff; border: 3px solid #f39c12;
-      border-radius: 8px; display: flex; align-items: center; justify-content: center;
-      font-size: 26px; color: #000; box-shadow: 0 4px 6px rgba(0,0,0,0.4); cursor: pointer;
+    /* Dynamic Moving Dice Container */
+    .dice-container {
+      position: absolute; width: 50px; height: 50px; background: #fff; border: 3px solid #f1c40f;
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 26px; color: #000; box-shadow: 0 6px 12px rgba(0,0,0,0.5); cursor: pointer;
+      z-index: 30; transition: all 0.4s ease-in-out;
+    }
+
+    /* Corner positions for the moving dice */
+    .dice-pos-Blue { bottom: 5px; left: 5px; }
+    .dice-pos-Red { top: 5px; left: 5px; }
+    .dice-pos-Green { top: 5px; right: 5px; }
+    .dice-pos-Yellow { bottom: 5px; right: 5px; }
+
+    .rolling { animation: spin 0.4s infinite linear; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .cheat-box {
+      margin-top: 10px; background: rgba(255, 255, 255, 0.1); padding: 8px; border-radius: 8px; font-size: 13px;
     }
   </style>
 </head>
@@ -91,7 +111,7 @@
 
   <!-- Screen 1: Main Menu -->
   <div id="title-screen" class="screen active">
-    <h1>LUDO MASTER</h1>
+    <h1>LUDO KINGDOM</h1>
     <div class="card">
       <button onclick="openOnlineMenu()">Online Multiplayer</button><br>
       <button onclick="openOfflineMenu()">Pass & Play (Offline)</button>
@@ -100,7 +120,7 @@
 
   <!-- Screen 2: Mode Settings -->
   <div id="mode-screen" class="screen">
-    <h2 id="mode-screen-title">Game Settings</h2>
+    <h2 id="mode-screen-title">Game Options</h2>
     <div class="card">
       <input type="text" id="player-name" placeholder="Enter Your Name"><br>
       
@@ -136,56 +156,58 @@
 
   <!-- Screen 4: Lobby -->
   <div id="lobby-screen" class="screen">
-    <h2>Room Code: <span id="code-display" style="color:#f39c12"></span></h2>
+    <h2>Room Code: <span id="code-display" style="color:#f1c40f"></span></h2>
     <div class="card">
       <p>Connected: <span id="peer-count">1</span>/<span id="max-peer-count">4</span></p>
-      <button id="start-btn" style="display:none;" onclick="startGame()">Start Play</button>
+      <button id="start-btn" style="display:none;" onclick="startGame()">Start Game</button>
     </div>
   </div>
 
   <!-- Screen 5: Game Board -->
   <div id="game-screen" class="screen">
     <div id="game-layout">
-      <div class="status-header">
-        <span id="turn-display" style="color:#f39c12; font-weight:bold;">Turn: Blue</span>
-        <div id="rule-message" style="font-size:11px; color:#aaa;">Roll the dice to start</div>
+      <div class="status-banner" id="status-banner">
+        <span id="turn-display" style="color:#3498db;">BLUE PLAYER'S TURN</span>
+        <div id="rule-message" style="font-size:12px; color:#fff; font-weight:normal;">Roll the dice to start</div>
       </div>
 
-      <div id="ludo-board">
-        <div class="base base-red">
-          <div class="base-inner">
-            <div class="cell" id="base-Red-0"></div><div class="cell" id="base-Red-1"></div>
-            <div class="cell" id="base-Red-2"></div><div class="cell" id="base-Red-3"></div>
+      <div id="ludo-board-wrapper">
+        <div id="ludo-board">
+          <div class="base base-red">
+            <div class="base-inner">
+              <div class="cell" id="base-Red-0"></div><div class="cell" id="base-Red-1"></div>
+              <div class="cell" id="base-Red-2"></div><div class="cell" id="base-Red-3"></div>
+            </div>
           </div>
-        </div>
-        <div class="base base-green">
-          <div class="base-inner">
-            <div class="cell" id="base-Green-0"></div><div class="cell" id="base-Green-1"></div>
-            <div class="cell" id="base-Green-2"></div><div class="cell" id="base-Green-3"></div>
+          <div class="base base-green">
+            <div class="base-inner">
+              <div class="cell" id="base-Green-0"></div><div class="cell" id="base-Green-1"></div>
+              <div class="cell" id="base-Green-2"></div><div class="cell" id="base-Green-3"></div>
+            </div>
           </div>
-        </div>
-        <div class="base base-yellow">
-          <div class="base-inner">
-            <div class="cell" id="base-Yellow-0"></div><div class="cell" id="base-Yellow-1"></div>
-            <div class="cell" id="base-Yellow-2"></div><div class="cell" id="base-Yellow-3"></div>
+          <div class="base base-yellow">
+            <div class="base-inner">
+              <div class="cell" id="base-Yellow-0"></div><div class="cell" id="base-Yellow-1"></div>
+              <div class="cell" id="base-Yellow-2"></div><div class="cell" id="base-Yellow-3"></div>
+            </div>
           </div>
-        </div>
-        <div class="base base-blue">
-          <div class="base-inner">
-            <div class="cell" id="base-Blue-0"></div><div class="cell" id="base-Blue-1"></div>
-            <div class="cell" id="base-Blue-2"></div><div class="cell" id="base-Blue-3"></div>
+          <div class="base base-blue">
+            <div class="base-inner">
+              <div class="cell" id="base-Blue-0"></div><div class="cell" id="base-Blue-1"></div>
+              <div class="cell" id="base-Blue-2"></div><div class="cell" id="base-Blue-3"></div>
+            </div>
           </div>
+
+          <div class="center-home"></div>
         </div>
 
-        <div class="center-home"></div>
+        <!-- Moving Dice Element -->
+        <div class="dice-container dice-pos-Blue" id="moving-dice" onclick="handleDiceClick()">🎲</div>
       </div>
 
-      <div class="controls-panel">
-        <div style="text-align:left;">
-          <small>Current Player</small><br>
-          <strong id="active-player-name" style="color:#3498db;">Blue</strong>
-        </div>
-        <div class="dice-box" id="dice-display" onclick="handleDiceClick()">🎲</div>
+      <!-- Host Cheat Toggle Option -->
+      <div id="host-cheat-panel" class="cheat-box" style="display:none;">
+        <label><input type="checkbox" id="force-six-chk"> Host Mode: Always Roll 6</label>
       </div>
     </div>
   </div>
@@ -207,7 +229,7 @@
     let diceRolledThisTurn = false;
 
     // Track state of all 16 gotis (4 per color)
-    // -1 = Base, 0..50 = Common Path, 51..55 = Home Path, 56 = Finished
+    // -1 = Base, 0..50 = Common Path, 51..55 = Home Stretch, 56 = Home (Finished)
     const gameState = {
       Blue: [-1, -1, -1, -1],
       Red: [-1, -1, -1, -1],
@@ -215,12 +237,10 @@
       Yellow: [-1, -1, -1, -1]
     };
 
-    // Safe cells on common path
     const safeCells = [1, 9, 14, 22, 27, 35, 40, 48];
     const colorOffsets = { Blue: 1, Red: 14, Green: 27, Yellow: 40 };
 
     const gridCoordinates = {
-      // Mapping common path 0..51 to row/col
       1: [14, 7], 2: [13, 7], 3: [12, 7], 4: [11, 7], 5: [10, 7], 6: [9, 6], 7: [9, 5], 8: [9, 4], 9: [9, 3], 10: [9, 2], 11: [9, 1], 12: [8, 1], 13: [7, 1],
       14: [7, 2], 15: [7, 3], 16: [7, 4], 17: [7, 5], 18: [7, 6], 19: [6, 7], 20: [5, 7], 21: [4, 7], 22: [3, 7], 23: [2, 7], 24: [1, 7], 25: [1, 8], 26: [1, 9],
       27: [2, 9], 28: [3, 9], 29: [4, 9], 30: [5, 9], 31: [6, 9], 32: [7, 10], 33: [7, 11], 34: [7, 12], 35: [7, 13], 36: [7, 14], 37: [7, 15], 38: [8, 15], 39: [9, 15],
@@ -244,9 +264,13 @@
         if (data.type === 'ROOM_CREATED' || data.type === 'JOINED_SUCCESS') {
           myColor = data.color;
           maxPlayers = data.maxPlayers;
+          isHost = data.isHost;
           document.getElementById('code-display').innerText = data.roomCode;
           document.getElementById('max-peer-count').innerText = maxPlayers;
-          if (isHost) document.getElementById('start-btn').style.display = 'inline-block';
+          if (isHost) {
+            document.getElementById('start-btn').style.display = 'inline-block';
+            document.getElementById('host-cheat-panel').style.display = 'block';
+          }
           showScreen('lobby-screen');
         }
 
@@ -281,6 +305,7 @@
       isOffline = true;
       document.getElementById('online-actions').style.display = "none";
       document.getElementById('offline-actions').style.display = "block";
+      document.getElementById('host-cheat-panel').style.display = "block"; // Host mode available in offline test too
       showScreen('mode-screen');
     }
 
@@ -323,7 +348,6 @@
             const [r, c] = gridCoordinates[absPos];
             document.getElementById(`cell-${r}-${c}`).appendChild(goti);
           } else if (pos >= 51 && pos < 56) {
-            // Home stretch
             const offset = pos - 51;
             let r, c;
             if (color === 'Blue') { r = 8; c = 2 + offset; }
@@ -341,32 +365,45 @@
       if (!isOffline && currentColor !== myColor) return;
       if (diceRolledThisTurn) return;
 
-      currentRoll = Math.floor(Math.random() * 6) + 1;
-      document.getElementById('dice-display').innerText = currentRoll;
-      diceRolledThisTurn = true;
+      const diceEl = document.getElementById('moving-dice');
+      diceEl.classList.add('rolling');
 
-      if (currentRoll === 6) {
-        consecutiveSixes++;
-        if (consecutiveSixes === 3) {
-          document.getElementById('rule-message').innerText = "3 consecutive 6s! Turn lost.";
-          resetTurn(false);
-          return;
+      setTimeout(() => {
+        diceEl.classList.remove('rolling');
+        
+        // Host Cheat logic check
+        const cheatEnabled = document.getElementById('force-six-chk').checked;
+        if (cheatEnabled && (isHost || isOffline)) {
+          currentRoll = 6;
+        } else {
+          currentRoll = Math.floor(Math.random() * 6) + 1;
         }
-      } else {
-        consecutiveSixes = 0;
-      }
 
-      // Check available moves
-      const moveable = getMoveableGotis(currentColor, currentRoll);
-      if (moveable.length === 0) {
-        document.getElementById('rule-message').innerText = "No valid moves available.";
-        setTimeout(() => resetTurn(false), 1000);
-      } else {
-        document.getElementById('rule-message').innerText = "Select a goti to move.";
-        highlightGotis(currentColor, moveable);
-      }
+        diceEl.innerText = currentRoll;
+        diceRolledThisTurn = true;
 
-      if (!isOffline) broadcastP2P({ type: 'DICE_ROLLED', roll: currentRoll, color: currentColor });
+        if (currentRoll === 6) {
+          consecutiveSixes++;
+          if (consecutiveSixes === 3) {
+            document.getElementById('rule-message').innerText = "3 consecutive 6s! Turn passed.";
+            setTimeout(() => resetTurn(false), 1000);
+            return;
+          }
+        } else {
+          consecutiveSixes = 0;
+        }
+
+        const moveable = getMoveableGotis(currentColor, currentRoll);
+        if (moveable.length === 0) {
+          document.getElementById('rule-message').innerText = "No possible move.";
+          setTimeout(() => resetTurn(false), 1200);
+        } else {
+          document.getElementById('rule-message').innerText = "Select a token to move";
+          highlightGotis(currentColor, moveable);
+        }
+
+        if (!isOffline) broadcastP2P({ type: 'DICE_ROLLED', roll: currentRoll, color: currentColor });
+      }, 300);
     }
 
     function getMoveableGotis(color, roll) {
@@ -396,12 +433,11 @@
       let pos = gameState[color][gotiIdx];
 
       if (pos === -1 && currentRoll === 6) {
-        gameState[color][gotiIdx] = 0; // Move out to start position
+        gameState[color][gotiIdx] = 0;
       } else {
         pos += currentRoll;
         gameState[color][gotiIdx] = pos;
 
-        // Check capture on common path
         if (pos < 51) {
           const absPos = (pos + colorOffsets[color]) % 52;
           if (!safeCells.includes(absPos)) {
@@ -411,9 +447,9 @@
                   if (oppPos >= 0 && oppPos < 51) {
                     const oppAbsPos = (oppPos + colorOffsets[oppColor]) % 52;
                     if (oppAbsPos === absPos) {
-                      gameState[oppColor][oppIdx] = -1; // Send back to base
-                      extraTurn = true; // Capture bonus turn
-                      document.getElementById('rule-message').innerText = `${color} captured ${oppColor}! Bonus turn!`;
+                      gameState[oppColor][oppIdx] = -1;
+                      extraTurn = true;
+                      document.getElementById('rule-message').innerText = `Captured ${oppColor}! Bonus turn!`;
                     }
                   }
                 });
@@ -425,7 +461,6 @@
 
       renderBoard();
       
-      // Check Win
       if (gameState[color].every(p => p === 56)) {
         alert(`${color} wins the game!`);
         return;
@@ -446,14 +481,25 @@
       }
 
       const nextColor = activeColors[currentTurnIndex];
-      document.getElementById('active-player-name').innerText = nextColor;
-      document.getElementById('turn-display').innerText = `Turn: ${nextColor}`;
-      document.getElementById('rule-message').innerText = extraTurn ? "Extra Roll!" : "Roll the dice";
+      
+      // Move Dice Box to active player's corner
+      const diceEl = document.getElementById('moving-dice');
+      diceEl.className = `dice-container dice-pos-${nextColor}`;
+
+      // Update Turn Banner
+      const turnDisplay = document.getElementById('turn-display');
+      turnDisplay.innerText = `${nextColor.toUpperCase()} PLAYER'S TURN`;
+      
+      const colorHex = { Blue: '#3498db', Red: '#e74c3c', Green: '#2ecc71', Yellow: '#f1c40f' };
+      turnDisplay.style.color = colorHex[nextColor];
+
+      document.getElementById('rule-message').innerText = extraTurn ? "⭐ EXTRA TURN!" : "Roll the dice";
     }
 
     function startOfflineGame() {
       maxPlayers = parseInt(document.getElementById('player-count-select').value);
       renderBoard();
+      resetTurn(false);
       showScreen('game-screen');
     }
 
@@ -474,6 +520,7 @@
     function startGame() {
       broadcastP2P({ type: 'START_GAME' });
       renderBoard();
+      resetTurn(false);
       showScreen('game-screen');
     }
 
@@ -502,11 +549,10 @@
     }
 
     function handleP2PMessage(data) {
-      if (data.type === 'START_GAME') { renderBoard(); showScreen('game-screen'); }
-      if (data.type === 'DICE_ROLLED') { document.getElementById('dice-display').innerText = data.roll; }
+      if (data.type === 'START_GAME') { renderBoard(); resetTurn(false); showScreen('game-screen'); }
+      if (data.type === 'DICE_ROLLED') { document.getElementById('moving-dice').innerText = data.roll; }
       if (data.type === 'MOVE_MADE') { Object.assign(gameState, data.gameState); renderBoard(); }
     }
   </script>
 </body>
 </html>
-
