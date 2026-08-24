@@ -28,18 +28,18 @@ wss.on('connection', (ws) => {
         const maxPlayers = parseInt(data.maxPlayers) || 4;
         rooms[roomCode] = {
           host: ws,
-          mode: data.mode,
           maxPlayers: maxPlayers,
           players: [{ id: ws.id, name: data.name, color: COLORS[0], ws }]
         };
         ws.roomCode = roomCode;
+        ws.isHost = true;
         ws.send(JSON.stringify({ 
           type: 'ROOM_CREATED', 
           roomCode, 
           color: COLORS[0], 
           playerId: ws.id, 
-          mode: data.mode,
-          maxPlayers: maxPlayers 
+          maxPlayers: maxPlayers,
+          isHost: true 
         }));
       }
 
@@ -52,6 +52,7 @@ wss.on('connection', (ws) => {
         const newPlayer = { id: ws.id, name: data.name, color, ws };
         
         ws.roomCode = data.roomCode;
+        ws.isHost = false;
         room.players.push(newPlayer);
 
         ws.send(JSON.stringify({ 
@@ -59,8 +60,8 @@ wss.on('connection', (ws) => {
           roomCode: data.roomCode, 
           color, 
           playerId: ws.id,
-          mode: room.mode,
-          maxPlayers: room.maxPlayers
+          maxPlayers: room.maxPlayers,
+          isHost: false
         }));
 
         room.host.send(JSON.stringify({
@@ -80,7 +81,7 @@ wss.on('connection', (ws) => {
         }
       }
     } catch (err) {
-      console.error("Error processing message:", err);
+      console.error("Error handling message:", err);
     }
   });
 
@@ -92,4 +93,4 @@ wss.on('connection', (ws) => {
 });
 
 const PORT = process.env.PORT || 10000;
-server.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
