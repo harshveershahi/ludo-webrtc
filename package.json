@@ -1,7 +1,7 @@
 {
   "name": "ludo-royale",
-  "version": "1.0.0",
-  "description": "Authoritative multiplayer Ludo with host mods, chat, emojis, AI",
+  "version": "2.0.0",
+  "description": "Authoritative multiplayer Ludo — Ludo King style, host mods, chat, emojis, AI",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
